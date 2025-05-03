@@ -1,6 +1,6 @@
 use derive_more::{Display, Error, From};
 
-use crate::data::{Client, ClientReport, StartInfo};
+use crate::data::{ClientInfo, ClientReport, StartInfo};
 
 pub struct SamDispatchClient {
     url: String,
@@ -22,7 +22,7 @@ impl SamDispatchClient {
         })
     }
 
-    pub async fn get_client(&self) -> Result<Client, reqwest::Error> {
+    pub async fn get_client(&self) -> Result<ClientInfo, reqwest::Error> {
         let res = self
             .client
             .get(format!("{}/client", self.url))

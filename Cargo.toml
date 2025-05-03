@@ -5,7 +5,9 @@ edition = "2024"
 repository = "https://github.com/SAM-Research/test-client"
 
 [dependencies]
-denim-sam-client = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "main" }
+denim-sam-client = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
+denim-sam-common = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
+sam-client = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "main" }
 tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.12", features = ["cookies"] }
 serde = { version = "1.0.210" }

@@ -11,7 +11,7 @@ pub struct Friend {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Client {
+pub struct ClientInfo {
     pub username: String,
     pub message_size_range: (u32, u32),
     pub send_rate: u32,

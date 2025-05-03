@@ -717,7 +717,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "denim-sam-client"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#7431e3d8522ab04cddfb7856cef1785076f45634"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=test-client#de0959b89bb1ea407d83f851cb97fe3bf0ad73af"
 dependencies = [
  "async-trait",
  "bon",
@@ -742,7 +742,7 @@ dependencies = [
 [[package]]
 name = "denim-sam-common"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#7431e3d8522ab04cddfb7856cef1785076f45634"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=test-client#de0959b89bb1ea407d83f851cb97fe3bf0ad73af"
 dependencies = [
  "async-trait",
  "bincode",
@@ -3360,8 +3360,10 @@ dependencies = [
  "async-trait",
  "bon",
  "denim-sam-client",
+ "denim-sam-common",
  "derive_more 2.0.1",
  "reqwest",
+ "sam-client",
  "serde",
  "serde_json",
  "serde_with",

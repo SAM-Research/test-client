@@ -1,4 +1,5 @@
 use data::{ClientReport, MessageLog, MessageType};
+
 use dispatch::SamDispatchClient;
 
 mod data;
