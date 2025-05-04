@@ -3,6 +3,7 @@ use data::{ClientReport, MessageLog, MessageType};
 use dispatch::SamDispatchClient;
 
 mod data;
+mod denim_client;
 mod dispatch;
 
 #[tokio::main]

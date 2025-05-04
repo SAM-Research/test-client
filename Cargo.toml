@@ -7,7 +7,7 @@ repository = "https://github.com/SAM-Research/test-client"
 [dependencies]
 denim-sam-client = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
 denim-sam-common = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
-sam-client = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "main" }
+sam-client = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "test-client" }
 tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.12", features = ["cookies"] }
 serde = { version = "1.0.210" }
@@ -16,3 +16,4 @@ derive_more = { version = "2.0.1" }
 async-trait = "0.1.83"
 serde_json = "1.0.139"
 bon = "3.3.2"
+rustls = "0.23.15"
