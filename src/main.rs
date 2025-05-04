@@ -1,35 +1,21 @@
-use data::{ClientReport, MessageLog, MessageType};
-
-use dispatch::SamDispatchClient;
-
+use denim_client::denim_client;
+use sam_net::tls::create_tls_client_config;
 mod data;
 mod denim_client;
 mod dispatch;
 
 #[tokio::main]
 async fn main() {
-    let dispatch = SamDispatchClient::new("127.0.0.1:8080".to_string()).expect("can create client");
-
-    let client = dispatch.get_client().await.expect("can get client");
-    let start = dispatch.wait_for_start().await.expect("can wait for start");
-    dispatch
-        .upload_results(
-            ClientReport::builder()
-                .websocket_port(44444)
-                .messages(vec![
-                    MessageLog::builder()
-                        .from("me".to_string())
-                        .to("you".to_string())
-                        .size(500)
-                        .timestamp(12)
-                        .r#type(MessageType::Regular)
-                        .build(),
-                ])
-                .build(),
-        )
+    env_logger::init();
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let tls = create_tls_client_config("./root.crt", None).expect("can create tls");
+    let client = denim_client()
+        .address("127.0.0.1:4443".to_string())
+        .buffer_size(10)
+        .tls(tls)
+        .username("magnus".to_string())
+        .upload_count(5)
+        .call()
         .await
-        .expect("can upload report");
-
-    println!("{:?}", client);
-    println!("{:?}", start);
+        .expect("can create client");
 }
