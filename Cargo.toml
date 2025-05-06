@@ -5,10 +5,11 @@ edition = "2024"
 repository = "https://github.com/SAM-Research/test-client"
 
 [dependencies]
-denim-sam-client = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
-denim-sam-common = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "test-client" }
-sam-client = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "test-client" }
-sam-net = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "test-client" }
+denim-sam-client = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "main" }
+denim-sam-common = { git = "https://github.com/SAM-Research/denim-on-sam.git", branch = "main" }
+sam-client = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "main" }
+sam-common = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "main" }
+sam-net = { git = "https://github.com/SAM-Research/sam-instant-messenger.git", branch = "main" }
 tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.12", features = ["cookies"] }
 serde = { version = "1.0.210" }
@@ -19,3 +20,6 @@ serde_json = "1.0.139"
 bon = "3.3.2"
 rustls = "0.23.15"
 env_logger = "0.11.6"
+rand = "0.8.5"
+log = "0.4.25"
+clap = "4.5.32"

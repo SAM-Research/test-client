@@ -484,6 +484,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "4.5.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eccb054f56cbd38340b380d4a8e69ef1f02f1af43db2f0cc817a4774d80ae071"
+dependencies = [
+ "clap_builder",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.5.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efd9466fac8543255d3b1fcad4762c5e116ffe808c8a3043d4263cd4fd4862a2"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap_lex",
+ "strsim",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
+
+[[package]]
 name = "cmake"
 version = "0.1.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -717,7 +744,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "denim-sam-client"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=test-client#189d9377d8c3ed299e568bb29940b38a22f38cf8"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#e4dce218100c91997db9cfc1f9a9c886115d1f29"
 dependencies = [
  "async-trait",
  "bon",
@@ -742,7 +769,7 @@ dependencies = [
 [[package]]
 name = "denim-sam-common"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=test-client#189d9377d8c3ed299e568bb29940b38a22f38cf8"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#e4dce218100c91997db9cfc1f9a9c886115d1f29"
 dependencies = [
  "async-trait",
  "bincode",
@@ -2734,7 +2761,7 @@ checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
 [[package]]
 name = "sam-client"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=test-client#a11574c3b60a344b5168f39fbdfa26c15ed6c158"
+source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=main#ed25c9ac0cac79dc681d622fab52d59251f83c22"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -2762,7 +2789,7 @@ dependencies = [
 [[package]]
 name = "sam-common"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=test-client#a11574c3b60a344b5168f39fbdfa26c15ed6c158"
+source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=main#ed25c9ac0cac79dc681d622fab52d59251f83c22"
 dependencies = [
  "async-trait",
  "axum",
@@ -2787,7 +2814,7 @@ dependencies = [
 [[package]]
 name = "sam-net"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=test-client#a11574c3b60a344b5168f39fbdfa26c15ed6c158"
+source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=main#ed25c9ac0cac79dc681d622fab52d59251f83c22"
 dependencies = [
  "async-trait",
  "bon",
@@ -2803,7 +2830,7 @@ dependencies = [
 [[package]]
 name = "sam-security"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=test-client#a11574c3b60a344b5168f39fbdfa26c15ed6c158"
+source = "git+https://github.com/SAM-Research/sam-instant-messenger.git?branch=main#ed25c9ac0cac79dc681d622fab52d59251f83c22"
 dependencies = [
  "async-trait",
  "bon",
@@ -3359,13 +3386,17 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bon",
+ "clap",
  "denim-sam-client",
  "denim-sam-common",
  "derive_more 2.0.1",
  "env_logger",
+ "log",
+ "rand 0.8.5",
  "reqwest",
  "rustls",
  "sam-client",
+ "sam-common",
  "sam-net",
  "serde",
  "serde_json",

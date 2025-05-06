@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use sam_common::AccountId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -12,6 +13,7 @@ pub struct Friend {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientInfo {
+    pub client_type: ClientType,
     pub username: String,
     pub message_size_range: (u32, u32),
     pub send_rate: u32,
@@ -23,10 +25,18 @@ pub struct ClientInfo {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
+pub enum ClientType {
+    Denim,
+    Sam,
+    #[serde(other)]
+    Other,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "lowercase")]
 pub enum MessageType {
     Denim,
     Regular,
-    Status,
     #[serde(other)]
     Other,
 }
@@ -36,21 +46,38 @@ pub enum MessageType {
 pub struct MessageLog {
     #[serde(rename = "type")]
     pub r#type: MessageType,
-    pub to: String,
     pub from: String,
-    pub size: u32,
-    pub timestamp: u64,
+    pub to: String,
+    pub size: usize,
+    pub tick: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, bon::Builder, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientReport {
-    pub websocket_port: u16,
+    pub start_time: u64,
     pub messages: Vec<MessageLog>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct StartInfo {
-    pub epoch: u64,
+    pub friends: HashMap<String, AccountId>,
+}
+
+#[derive(Serialize, Deserialize, Clone, bon::Builder, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountInfo {
+    pub account_id: AccountId,
+}
+
+pub struct DispatchData {
+    pub client: ClientInfo,
+    pub start: StartInfo,
+}
+
+impl DispatchData {
+    pub fn new(client: ClientInfo, start: StartInfo) -> Self {
+        Self { client, start }
+    }
 }

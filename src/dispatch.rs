@@ -1,6 +1,5 @@
+use crate::data::{AccountInfo, ClientInfo, ClientReport, StartInfo};
 use derive_more::{Display, Error, From};
-
-use crate::data::{ClientInfo, ClientReport, StartInfo};
 
 pub struct SamDispatchClient {
     url: String,
@@ -15,28 +14,25 @@ pub enum SamDispatchError {
 }
 
 impl SamDispatchClient {
-    pub fn new(url: String) -> Result<Self, reqwest::Error> {
+    pub fn new(url: String) -> Result<Self, SamDispatchError> {
         Ok(Self {
             url: format!("http://{}", url),
             client: reqwest::Client::builder().cookie_store(true).build()?,
         })
     }
 
-    pub async fn get_client(&self) -> Result<ClientInfo, reqwest::Error> {
+    pub async fn get_client(&self) -> Result<ClientInfo, SamDispatchError> {
         let res = self
             .client
             .get(format!("{}/client", self.url))
             .send()
             .await?;
-        res.json().await
+
+        Ok(res.json().await?)
     }
 
-    pub async fn wait_for_start(&self) -> Result<StartInfo, SamDispatchError> {
-        let res = self
-            .client
-            .get(format!("{}/start", self.url))
-            .send()
-            .await?;
+    pub async fn sync(&self) -> Result<StartInfo, SamDispatchError> {
+        let res = self.client.get(format!("{}/sync", self.url)).send().await?;
         if res.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(SamDispatchError::Unauthorized);
         }
@@ -48,6 +44,20 @@ impl SamDispatchClient {
         let res = self
             .client
             .post(format!("{}/upload", self.url))
+            .body(json_val)
+            .send()
+            .await?;
+        if res.status() == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(SamDispatchError::Unauthorized);
+        }
+        Ok(())
+    }
+
+    pub async fn upload_account_id(&self, account_id: AccountInfo) -> Result<(), SamDispatchError> {
+        let json_val = serde_json::to_string(&account_id)?;
+        let res = self
+            .client
+            .post(format!("{}/id", self.url))
             .body(json_val)
             .send()
             .await?;
