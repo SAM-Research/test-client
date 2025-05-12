@@ -24,3 +24,4 @@ target/
 *.crt
 *.key
 *.json
+Cargo.lock
