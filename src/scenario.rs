@@ -81,36 +81,52 @@ impl ScenarioRunner {
 
         let usernames = Rc::new(usernames(&account_ids));
 
-        let (reg, den) = {
-            let bclient = client.lock().await;
-            (bclient.regular_subscribe(), bclient.deniable_subscribe())
+        let start_millis = self.start_time as u128 * 1000;
+        let (reg_log, den_log) = {
+            let guard = client.lock().await;
+            if guard.is_denim() {
+                let (reg, den) = (guard.regular_subscribe(), guard.deniable_subscribe());
+                let reg_log = recv_logger()
+                    .recv(reg)
+                    .msg_log(msg_log.clone())
+                    .username(username.clone())
+                    .usernames(usernames.clone())
+                    .msg_type(MessageType::Regular)
+                    .start_time(start_millis)
+                    .tick_millis(tick_time)
+                    .stop(stop.clone())
+                    .call();
+                let den_log = recv_logger()
+                    .recv(den)
+                    .msg_log(msg_log.clone())
+                    .username(username.clone())
+                    .usernames(usernames.clone())
+                    .msg_type(MessageType::Denim)
+                    .start_time(start_millis)
+                    .tick_millis(tick_time)
+                    .stop(stop.clone())
+                    .call();
+                (reg_log, Some(den_log))
+            } else {
+                let reg = guard.regular_subscribe();
+                let reg_log = recv_logger()
+                    .recv(reg)
+                    .msg_log(msg_log.clone())
+                    .username(username.clone())
+                    .usernames(usernames.clone())
+                    .msg_type(MessageType::Regular)
+                    .start_time(start_millis)
+                    .tick_millis(tick_time)
+                    .stop(stop.clone())
+                    .call();
+                (reg_log, None)
+            }
         };
 
-        let start_millis = self.start_time as u128 * 1000;
-
-        let denim_logger = recv_logger()
-            .recv(den)
-            .msg_log(msg_log.clone())
-            .username(username.clone())
-            .usernames(usernames.clone())
-            .msg_type(MessageType::Denim)
-            .start_time(start_millis)
-            .tick_millis(tick_time)
-            .stop(stop.clone())
-            .call();
-        let regular_logger = recv_logger()
-            .recv(reg)
-            .msg_log(msg_log.clone())
-            .username(username.clone())
-            .usernames(usernames.clone())
-            .msg_type(MessageType::Regular)
-            .start_time(start_millis)
-            .tick_millis(tick_time)
-            .stop(stop.clone())
-            .call();
-
-        self.local_set.spawn_local(denim_logger);
-        self.local_set.spawn_local(regular_logger);
+        self.local_set.spawn_local(reg_log);
+        if let Some(logger) = den_log {
+            self.local_set.spawn_local(logger);
+        }
 
         self.local_set.spawn_local(async move {
             let mut timer = Timer::new(
@@ -219,14 +235,13 @@ async fn send_message(
     let mut msg_log = msg_log.borrow_mut();
 
     let msg = random_bytes(min, max, &mut rng);
-    let denim = is_denim(denim_prob, &mut rng);
+    let denim = is_denim(denim_prob, &mut rng) && denim_friends.len() > 0;
 
     let friend = if denim {
         get_friend(&denim_friends, &mut rng)
     } else {
         get_friend(&friends, &mut rng)
     };
-
     let friend_name = friend.as_ref().and_then(|f| Some(f.username.clone()));
     let account_id = friend.and_then(|f| account_ids.get(&f.username));
 

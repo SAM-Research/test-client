@@ -2,5 +2,6 @@
   "address": "127.0.0.1:4443",
   "dispatchAddress": "127.0.0.1:8080",
   "certificatePath": "./root.crt",
-  "channelBufferSize": 10
+  "channelBufferSize": 10,
+  "logging": "info"
 }

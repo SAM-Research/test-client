@@ -21,6 +21,14 @@ impl SamDispatchClient {
         })
     }
 
+    pub async fn health(&self) -> bool {
+        let res = self.client.get(format!("{}/health", self.url)).send().await;
+        match res {
+            Ok(r) => r.status().is_success(),
+            Err(_) => false,
+        }
+    }
+
     pub async fn get_client(&self) -> Result<ClientInfo, SamDispatchError> {
         let res = self
             .client

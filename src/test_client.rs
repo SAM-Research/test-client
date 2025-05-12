@@ -143,6 +143,10 @@ impl TestClient {
         ))
     }
 
+    pub fn is_denim(&self) -> bool {
+        matches!(self, TestClient::Denim(_))
+    }
+
     pub fn account_id(&self) -> AccountId {
         match self {
             TestClient::Sam(client) => client.account_id(),

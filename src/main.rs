@@ -1,10 +1,11 @@
-use std::io::BufReader;
+use std::{io::BufReader, time::Duration};
 
 use clap::{Arg, Command};
 use config::DenimClientConfig;
 use data::{AccountInfo, DispatchData};
 use derive_more::{Display, Error, From};
 use dispatch::{SamDispatchClient, SamDispatchError};
+use health::HealthClient;
 use log::{error, info};
 use sam_net::{error::ClientTlsError, tls::create_tls_client_config};
 use scenario::ScenarioRunner;
@@ -13,6 +14,7 @@ use test_client::{TestClient, TestClientCreationError};
 mod config;
 mod data;
 mod dispatch;
+mod health;
 mod scenario;
 mod test_client;
 mod timer;
@@ -27,6 +29,7 @@ pub enum CliError {
     ArgumentError(#[error(not(source))] String),
     Tls(ClientTlsError),
     Creation(TestClientCreationError),
+    Reqwest(reqwest::Error),
     UnknownClientType,
 }
 
@@ -60,7 +63,38 @@ async fn cli() -> Result<(), CliError> {
 
     let dispatch = SamDispatchClient::new(config.dispatch_address)?;
 
+    while !dispatch.health().await {
+        info!("Dispatcher unavailable, trying again in 200ms...");
+        tokio::time::sleep(Duration::from_millis(200)).await
+    }
+    info!("Dispatcher ready!");
     let client_info = dispatch.get_client().await?;
+
+    let health = HealthClient::new(config.address.clone(), tls.clone())?;
+
+    loop {
+        let check = match health.health().await {
+            Ok(check) => check,
+            Err(x) => {
+                error!("{}", x);
+                info!("Health unavailable, trying again in 200ms...");
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                continue;
+            }
+        };
+        if check.is_ok() {
+            break;
+        }
+        info!("SAM Health: {}", check.sam);
+        if let Some(denim) = check.denim {
+            info!("DenIM Proxy Health: {}", denim);
+            info!("Database Health: {}", check.database);
+            info!("Trying again in 200ms...");
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+    }
+
+    info!("SAM ready!");
 
     let client = match client_info.client_type {
         data::ClientType::Denim => {
@@ -106,7 +140,7 @@ async fn cli() -> Result<(), CliError> {
     let dispatch_data = DispatchData::new(client_info, start_info);
 
     let runner = ScenarioRunner::new(dispatch_data, client);
-
+    info!("Starting Scenario...");
     let report = runner.start().await;
 
     dispatch.upload_results(report).await?;

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::error;
 use rand::{Rng, distributions::WeightedIndex, prelude::Distribution};
 use sam_common::AccountId;
 
@@ -32,10 +33,13 @@ pub fn get_friend<R: Rng>(friends: &HashMap<String, Friend>, rng: &mut R) -> Opt
     let values: Vec<&Friend> = friends.values().collect();
     let weights: Vec<f64> = values.iter().map(|f| f.frequency).collect();
 
-    WeightedIndex::new(&weights).ok().map(|dist| {
-        let index = dist.sample(rng);
-        values[index].clone()
-    })
+    WeightedIndex::new(&weights)
+        .inspect_err(|e| error!("{e}"))
+        .ok()
+        .map(|dist| {
+            let index = dist.sample(rng);
+            values[index].clone()
+        })
 }
 
 pub fn random_bytes<R: Rng>(min: u32, max: u32, rng: &mut R) -> Vec<u8> {

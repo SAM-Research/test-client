@@ -179,6 +179,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
+name = "atomic_float"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "628d228f918ac3b82fe590352cc719d30664a0c13ca3a60266fe02c7132d480a"
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -744,7 +750,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "denim-sam-client"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#e4dce218100c91997db9cfc1f9a9c886115d1f29"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#b23b434827cf2b1d3bf5e8754f5a2c2ab0b62df3"
 dependencies = [
  "async-trait",
  "bon",
@@ -769,9 +775,10 @@ dependencies = [
 [[package]]
 name = "denim-sam-common"
 version = "0.1.0"
-source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#e4dce218100c91997db9cfc1f9a9c886115d1f29"
+source = "git+https://github.com/SAM-Research/denim-on-sam.git?branch=main#b23b434827cf2b1d3bf5e8754f5a2c2ab0b62df3"
 dependencies = [
  "async-trait",
+ "atomic_float",
  "bincode",
  "bon",
  "derive_more 2.0.1",

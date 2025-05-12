@@ -9,3 +9,11 @@ cargo update -p sam-server
 ```
 
 you might need to change `sam-server` to either one of the other sam projects
+
+# Docker
+
+Building the `test-client` docker image:
+
+```sh
+docker build -t test-client .
+```

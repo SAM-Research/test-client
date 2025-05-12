@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use sam_common::AccountId;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Friend {
@@ -69,6 +68,22 @@ pub struct StartInfo {
 #[serde(rename_all = "camelCase")]
 pub struct AccountInfo {
     pub account_id: AccountId,
+}
+
+#[derive(Serialize, Deserialize, Clone, bon::Builder, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct HealthCheck {
+    pub sam: String,
+    pub denim: Option<String>,
+    pub database: String,
+}
+
+impl HealthCheck {
+    pub fn is_ok(&self) -> bool {
+        let status = vec![&self.sam, &self.database];
+        let is_ok = status.iter().all(|f| *f == "OK");
+        is_ok && self.denim.as_ref().is_some_and(|x| x == "OK")
+    }
 }
 
 pub struct DispatchData {
