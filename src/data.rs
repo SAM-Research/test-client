@@ -82,7 +82,8 @@ impl HealthCheck {
     pub fn is_ok(&self) -> bool {
         let status = vec![&self.sam, &self.database];
         let is_ok = status.iter().all(|f| *f == "OK");
-        is_ok && self.denim.as_ref().is_some_and(|x| x == "OK")
+        let denim = self.denim.as_ref().is_some_and(|x| x == "OK") || self.denim.as_ref().is_none();
+        is_ok && denim
     }
 }
 
