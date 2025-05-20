@@ -47,6 +47,6 @@ pub fn random_bytes<R: Rng>(min: u32, max: u32, rng: &mut R) -> Vec<u8> {
     (0..length).map(|_| rng.r#gen()).collect()
 }
 
-pub fn is_denim<R: Rng>(denim_prob: f32, rng: &mut R) -> bool {
-    rng.r#gen::<f32>() < denim_prob.clamp(0.0, 1.0)
+pub fn sample_prob<R: Rng>(prob: f32, rng: &mut R) -> bool {
+    rng.r#gen::<f32>() < prob.clamp(0.0, 1.0)
 }

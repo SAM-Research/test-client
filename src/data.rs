@@ -16,9 +16,12 @@ pub struct ClientInfo {
     pub username: String,
     pub message_size_range: (u32, u32),
     pub send_rate: u32,
+    pub reply_rate: u32,
     pub tick_millis: u32,
     pub duration_ticks: u32,
     pub denim_probability: f32,
+    pub reply_probability: f32,
+    pub stale_reply: u32,
     pub friends: HashMap<String, Friend>,
 }
 
