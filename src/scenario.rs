@@ -7,7 +7,7 @@ use std::{
 };
 
 use bon::builder;
-use log::error;
+use log::{error, info, warn};
 use rand::{distributions::WeightedIndex, prelude::Distribution, thread_rng};
 use sam_client::encryption::DecryptedEnvelope;
 use sam_common::AccountId;
@@ -186,13 +186,13 @@ impl ScenarioRunner {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct IncomingMessage {
     tick: u32,
     from: String,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum ReplyType {
     Denim(IncomingMessage),
     Sam(IncomingMessage),
@@ -273,7 +273,7 @@ async fn recv_logger(
         };
 
         incoming.borrow_mut().push(reply);
-
+        info!("Received message from '{from_user}'");
         msg_log.borrow_mut().push(MessageLog {
             r#type: msg_type.clone(),
             from: from_user.clone(),
@@ -336,6 +336,7 @@ async fn send_message(
     if let Err(e) = res {
         error!("{e}");
     }
+    info!("Sent message to '{friend_name}'");
     msg_log.push(MessageLog {
         r#type: msg_type,
         from: username,
@@ -366,8 +367,10 @@ async fn reply_message(
     let msg = random_bytes(min, max, &mut rng);
     let mut messages = incoming.borrow_mut();
 
-    messages.retain(|x| x.tick() - current_tick > stale_ticks);
-
+    messages.retain(|x| current_tick - x.tick() > stale_ticks);
+    if messages.len() == 0 {
+        return;
+    }
     let weights: Vec<f64> = messages
         .iter()
         .map(|x| {
@@ -378,7 +381,6 @@ async fn reply_message(
                 .unwrap_or(0.0)
         })
         .collect();
-
     let index = WeightedIndex::new(&weights)
         .inspect_err(|e| error!("{e}"))
         .ok()
@@ -390,7 +392,7 @@ async fn reply_message(
     let reply = match index {
         Some(reply) => reply,
         None => {
-            error!("Did not get a reply index!");
+            warn!("Did not get a reply index!");
             return;
         }
     };
@@ -398,7 +400,7 @@ async fn reply_message(
     if let Some(pos) = messages.iter().position(|x| x == &reply) {
         messages.remove(pos);
     } else {
-        error!("Could not remove reply");
+        warn!("Could not remove reply");
     }
 
     if !sample_prob(reply_prob, &mut rng) {
@@ -435,6 +437,7 @@ async fn reply_message(
             return;
         }
     };
+    info!("Sent reply to '{friend_name}'");
 
     if let Err(e) = res {
         error!("{e}");
