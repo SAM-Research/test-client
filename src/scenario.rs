@@ -8,7 +8,7 @@ use std::{
 
 use bon::builder;
 use log::error;
-use rand::thread_rng;
+use rand::{distributions::WeightedIndex, prelude::Distribution, thread_rng};
 use sam_client::encryption::DecryptedEnvelope;
 use sam_common::AccountId;
 use tokio::{
@@ -20,12 +20,13 @@ use crate::{
     data::{ClientReport, DispatchData, Friend, MessageLog, MessageType},
     test_client::TestClient,
     timer::Timer,
-    utils::{denim_friends, get_friend, is_denim, normal_friends, random_bytes, usernames},
+    utils::{denim_friends, get_friend, normal_friends, random_bytes, sample_prob, usernames},
 };
 
 type ArcClient = Arc<Mutex<TestClient>>;
 type RefLogs = Rc<RefCell<Vec<MessageLog>>>;
 type RefBool = Rc<RefCell<bool>>;
+type RefIncoming = Rc<RefCell<Vec<ReplyType>>>;
 
 pub struct ScenarioRunner {
     data: DispatchData,
@@ -65,7 +66,8 @@ impl ScenarioRunner {
     async fn event_loop(&self) {
         let tick_time = self.data.client.tick_millis;
         let end_tick = self.data.client.duration_ticks;
-        let action_rate = self.data.client.send_rate;
+        let send_rate = self.data.client.send_rate;
+        let reply_rate = self.data.client.reply_rate;
         let client = self.client.clone();
         let msg_log = self.message_logs.clone();
         let friends = &self.data.client.friends;
@@ -74,12 +76,16 @@ impl ScenarioRunner {
         let denim_friends = Rc::new(denim_friends(friends));
         let account_ids = Rc::new(self.data.start.friends.clone());
         let denim_prob = self.data.client.denim_probability;
+        let reply_prob = self.data.client.reply_probability;
+        let stale_reply = self.data.client.stale_reply;
         let sizes = self.data.client.message_size_range;
         let username = self.data.client.username.clone();
 
         let stop = self.stop.clone();
 
         let usernames = Rc::new(usernames(&account_ids));
+        let friends = Rc::new(friends.clone());
+        let incoming: RefIncoming = Rc::default();
 
         let start_millis = self.start_time as u128 * 1000;
         let (reg_log, den_log) = {
@@ -95,6 +101,7 @@ impl ScenarioRunner {
                     .start_time(start_millis)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
+                    .incoming(incoming.clone())
                     .call();
                 let den_log = recv_logger()
                     .recv(den)
@@ -105,6 +112,7 @@ impl ScenarioRunner {
                     .start_time(start_millis)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
+                    .incoming(incoming.clone())
                     .call();
                 (reg_log, Some(den_log))
             } else {
@@ -118,6 +126,7 @@ impl ScenarioRunner {
                     .start_time(start_millis)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
+                    .incoming(incoming.clone())
                     .call();
                 (reg_log, None)
             }
@@ -129,11 +138,7 @@ impl ScenarioRunner {
         }
 
         self.local_set.spawn_local(async move {
-            let mut timer = Timer::new(
-                Duration::from_millis(tick_time.into()),
-                end_tick,
-                action_rate,
-            );
+            let mut timer = Timer::new(Duration::from_millis(tick_time.into()), end_tick);
 
             while timer.next().await {
                 let process_client = client.clone();
@@ -143,25 +148,70 @@ impl ScenarioRunner {
                     }
                 });
 
-                if !timer.do_action() {
-                    continue;
+                if timer.do_action(reply_rate) {
+                    tokio::task::spawn_local(
+                        reply_message()
+                            .username(username.clone())
+                            .client(client.clone())
+                            .friends(friends.clone())
+                            .account_ids(account_ids.clone())
+                            .msg_log(msg_log.clone())
+                            .message_sizes(sizes)
+                            .current_tick(timer.current_tick())
+                            .reply_prob(reply_prob)
+                            .incoming(incoming.clone())
+                            .stale_ticks(stale_reply)
+                            .call(),
+                    );
                 }
-                tokio::task::spawn_local(
-                    send_message()
-                        .username(username.clone())
-                        .client(client.clone())
-                        .friends(normal_friends.clone())
-                        .denim_friends(denim_friends.clone())
-                        .account_ids(account_ids.clone())
-                        .msg_log(msg_log.clone())
-                        .denim_prob(denim_prob)
-                        .message_sizes(sizes)
-                        .current_tick(timer.current_tick())
-                        .call(),
-                );
+
+                if timer.do_action(send_rate) {
+                    tokio::task::spawn_local(
+                        send_message()
+                            .username(username.clone())
+                            .client(client.clone())
+                            .friends(normal_friends.clone())
+                            .denim_friends(denim_friends.clone())
+                            .account_ids(account_ids.clone())
+                            .msg_log(msg_log.clone())
+                            .denim_prob(denim_prob)
+                            .message_sizes(sizes)
+                            .current_tick(timer.current_tick())
+                            .call(),
+                    );
+                }
             }
             *stop.borrow_mut() = true;
         });
+    }
+}
+
+#[derive(Clone, PartialEq)]
+struct IncomingMessage {
+    tick: u32,
+    from: String,
+}
+
+#[derive(Clone, PartialEq)]
+enum ReplyType {
+    Denim(IncomingMessage),
+    Sam(IncomingMessage),
+}
+
+impl ReplyType {
+    fn tick(&self) -> u32 {
+        match self {
+            ReplyType::Denim(incoming_message) => incoming_message,
+            ReplyType::Sam(incoming_message) => incoming_message,
+        }
+        .tick
+    }
+    fn from(&self) -> &String {
+        &match self {
+            ReplyType::Denim(incoming_message) => incoming_message,
+            ReplyType::Sam(incoming_message) => incoming_message,
+        }
+        .from
     }
 }
 
@@ -174,6 +224,7 @@ async fn recv_logger(
     msg_type: MessageType,
     start_time: u128,
     tick_millis: u32,
+    incoming: RefIncoming,
     stop: RefBool,
 ) {
     while !*stop.borrow() {
@@ -207,6 +258,22 @@ async fn recv_logger(
             }
         };
 
+        let msg = IncomingMessage {
+            tick: recv_tick,
+            from: from_user.clone(),
+        };
+
+        let reply = match msg_type {
+            MessageType::Denim => ReplyType::Denim(msg),
+            MessageType::Regular => ReplyType::Sam(msg),
+            MessageType::Other => {
+                error!("Received a message that was neither a denim or sam message!");
+                continue;
+            }
+        };
+
+        incoming.borrow_mut().push(reply);
+
         msg_log.borrow_mut().push(MessageLog {
             r#type: msg_type.clone(),
             from: from_user.clone(),
@@ -235,7 +302,7 @@ async fn send_message(
     let mut msg_log = msg_log.borrow_mut();
 
     let msg = random_bytes(min, max, &mut rng);
-    let denim = is_denim(denim_prob, &mut rng) && denim_friends.len() > 0;
+    let denim = sample_prob(denim_prob, &mut rng) && denim_friends.len() > 0;
 
     let friend = if denim {
         get_friend(&denim_friends, &mut rng)
@@ -264,6 +331,109 @@ async fn send_message(
             guard.send_message(*account_id, msg).await,
             MessageType::Regular,
         )
+    };
+
+    if let Err(e) = res {
+        error!("{e}");
+    }
+    msg_log.push(MessageLog {
+        r#type: msg_type,
+        from: username,
+        to: friend_name,
+        size: msg_len,
+        tick: current_tick,
+    });
+}
+
+#[builder]
+async fn reply_message(
+    username: String,
+    client: ArcClient,
+    friends: Rc<HashMap<String, Friend>>,
+    account_ids: Rc<HashMap<String, AccountId>>,
+    msg_log: RefLogs,
+    message_sizes: (u32, u32),
+    stale_ticks: u32,
+    current_tick: u32,
+    reply_prob: f32,
+    incoming: RefIncoming,
+) {
+    let (min, max) = message_sizes;
+    let mut rng = thread_rng();
+    let mut guard = client.lock().await;
+    let mut msg_log = msg_log.borrow_mut();
+
+    let msg = random_bytes(min, max, &mut rng);
+    let mut messages = incoming.borrow_mut();
+
+    messages.retain(|x| x.tick() - current_tick > stale_ticks);
+
+    let weights: Vec<f64> = messages
+        .iter()
+        .map(|x| {
+            let username = x.from();
+            friends
+                .get(username)
+                .and_then(|f| Some(f.frequency))
+                .unwrap_or(0.0)
+        })
+        .collect();
+
+    let index = WeightedIndex::new(&weights)
+        .inspect_err(|e| error!("{e}"))
+        .ok()
+        .map(|dist| {
+            let index = dist.sample(&mut rng);
+            messages[index].clone()
+        });
+
+    let reply = match index {
+        Some(reply) => reply,
+        None => {
+            error!("Did not get a reply index!");
+            return;
+        }
+    };
+
+    if let Some(pos) = messages.iter().position(|x| x == &reply) {
+        messages.remove(pos);
+    } else {
+        error!("Could not remove reply");
+    }
+
+    if !sample_prob(reply_prob, &mut rng) {
+        return;
+    }
+
+    let (account_id, friend_name, msg_type) = match reply {
+        ReplyType::Denim(msg) => {
+            let friend_name = msg.from;
+            let account_id = account_ids.get(&friend_name);
+            (account_id, friend_name, MessageType::Denim)
+        }
+        ReplyType::Sam(msg) => {
+            let friend_name = msg.from;
+            let account_id = account_ids.get(&friend_name);
+            (account_id, friend_name, MessageType::Regular)
+        }
+    };
+
+    let account_id = match account_id {
+        Some(x) => x,
+        None => {
+            error!("Reply: Friend does not exist!");
+            return;
+        }
+    };
+
+    let msg_len = msg.len();
+    let res = match msg_type {
+        MessageType::Denim => guard.enqueue_message(*account_id, msg).await,
+        MessageType::Regular => guard.send_message(*account_id, msg).await,
+        MessageType::Other => {
+            error!("Message reply was not a valid type!");
+            return;
+        }
     };
 
     if let Err(e) = res {
