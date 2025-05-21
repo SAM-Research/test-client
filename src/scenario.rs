@@ -315,7 +315,7 @@ async fn send_message(
     let (account_id, friend_name) = match (account_id, friend_name) {
         (Some(f), Some(n)) => (f, n),
         _ => {
-            error!("Friend does not exist!");
+            error!("Send Message: Friend does not exist!");
             return;
         }
     };
@@ -334,7 +334,7 @@ async fn send_message(
     };
 
     if let Err(e) = res {
-        error!("{e}");
+        error!("Send Message Client Error: {e}");
     }
     info!("Sent message to '{friend_name}'");
     msg_log.push(MessageLog {
@@ -381,6 +381,7 @@ async fn reply_message(
                 .unwrap_or(0.0)
         })
         .collect();
+
     let index = WeightedIndex::new(&weights)
         .inspect_err(|e| error!("{e}"))
         .ok()
@@ -392,7 +393,7 @@ async fn reply_message(
     let reply = match index {
         Some(reply) => reply,
         None => {
-            warn!("Did not get a reply index!");
+            warn!("Reply Message: Did not get a reply index!");
             return;
         }
     };
@@ -400,7 +401,7 @@ async fn reply_message(
     if let Some(pos) = messages.iter().position(|x| x == &reply) {
         messages.remove(pos);
     } else {
-        warn!("Could not remove reply");
+        warn!("Reply Message: Could not remove reply");
     }
 
     if !sample_prob(reply_prob, &mut rng) {
@@ -423,7 +424,7 @@ async fn reply_message(
     let account_id = match account_id {
         Some(x) => x,
         None => {
-            error!("Reply: Friend does not exist!");
+            error!("Reply Message: Friend does not exist!");
             return;
         }
     };
@@ -433,14 +434,14 @@ async fn reply_message(
         MessageType::Denim => guard.enqueue_message(*account_id, msg).await,
         MessageType::Regular => guard.send_message(*account_id, msg).await,
         MessageType::Other => {
-            error!("Message reply was not a valid type!");
+            error!("Reply Message: Message reply was not a valid type!");
             return;
         }
     };
     info!("Sent reply to '{friend_name}'");
 
     if let Err(e) = res {
-        error!("{e}");
+        error!("Reply Message Client Error: {e}");
     }
     msg_log.push(MessageLog {
         r#type: msg_type,

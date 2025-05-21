@@ -108,6 +108,7 @@ async fn cli() -> Result<(), CliError> {
                 .maybe_tls(tls)
                 .username(client_info.username.clone())
                 .upload_count(client_info.friends.len() + 1)
+                .inmemory(config.inmemory)
                 .call()
                 .await?
         }
@@ -122,6 +123,7 @@ async fn cli() -> Result<(), CliError> {
                 .maybe_tls(tls)
                 .username(client_info.username.clone())
                 .upload_count(client_info.friends.len() + 1)
+                .inmemory(config.inmemory)
                 .call()
                 .await?
         }

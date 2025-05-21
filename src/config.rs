@@ -8,6 +8,7 @@ pub struct DenimClientConfig {
     pub certificate_path: Option<String>,
 
     pub channel_buffer_size: Option<usize>,
+    pub inmemory: bool,
 
     pub logging: Option<String>,
 }

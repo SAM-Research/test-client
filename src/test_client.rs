@@ -59,8 +59,13 @@ impl TestClient {
         buffer_size: usize,
         tls: Option<ClientConfig>,
         upload_count: usize,
+        inmemory: bool,
     ) -> Result<Self, TestClientCreationError> {
-        let store_url = format!("sqlite://{}_sam.sql?mode=rwc", username);
+        let store_url = if inmemory {
+            "sqlite::memory:".to_string()
+        } else {
+            format!("sqlite://{}_sam.sql?mode=rwc", username)
+        };
         let sam_conn = SqliteConnector::migrate(&store_url)
             .await
             .map_err(SamClientCreationError::Database)?;
@@ -99,9 +104,16 @@ impl TestClient {
         buffer_size: usize,
         tls: Option<ClientConfig>,
         upload_count: usize,
+        inmemory: bool,
     ) -> Result<Self, TestClientCreationError> {
-        let store_url = format!("sqlite://{}_sam.sql?mode=rwc", username);
-        let denim_store_url = format!("sqlite://{}_denim.sql?mode=rwc", username);
+        let (store_url, denim_store_url) = if inmemory {
+            ("sqlite::memory:".to_string(), "sqlite::memory:".to_string())
+        } else {
+            (
+                format!("sqlite://{}_sam.sql?mode=rwc", username),
+                format!("sqlite://{}_denim.sql?mode=rwc", username),
+            )
+        };
 
         let sam_conn = SqliteConnector::migrate(&store_url)
             .await
