@@ -71,8 +71,14 @@ impl ScenarioRunner {
         let msg_log = self.message_logs.clone();
         let friends = &self.data.client.friends;
 
-        let normal_friends = Rc::new(normal_friends(friends));
-        let denim_friends = Rc::new(denim_friends(friends));
+        let (normal_friends, denim_friends) = if client.lock().await.is_denim() {
+            let normal_friends = Rc::new(normal_friends(friends));
+            let denim_friends = Rc::new(denim_friends(friends));
+            (normal_friends, denim_friends)
+        } else {
+            (Rc::new(friends.clone()), Rc::default())
+        };
+
         let account_ids = Rc::new(self.data.start.friends.clone());
         let denim_prob = self.data.client.denim_probability;
         let reply_prob = self.data.client.reply_probability;
@@ -303,7 +309,7 @@ async fn send_message(
     let msg = random_bytes(min, max, &mut rng);
     let denim = sample_prob(denim_prob, &mut rng) && denim_friends.len() > 0;
 
-    let friend = if denim {
+    let friend = if denim && guard.is_denim() {
         get_friend(&denim_friends, &mut rng)
     } else {
         get_friend(&friends, &mut rng)
