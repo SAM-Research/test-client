@@ -335,6 +335,7 @@ async fn send_message(
 
     if let Err(e) = res {
         error!("Send Message Client Error: {e}");
+        return;
     }
     info!("Sent message to '{friend_name}'");
     msg_log.push(MessageLog {
@@ -438,11 +439,12 @@ async fn reply_message(
             return;
         }
     };
-    info!("Sent reply to '{friend_name}'");
 
     if let Err(e) = res {
         error!("Reply Message Client Error: {e}");
+        return;
     }
+    info!("Sent reply to '{friend_name}'");
     msg_log.push(MessageLog {
         r#type: msg_type,
         from: username,
