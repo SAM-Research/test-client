@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     rc::Rc,
     sync::Arc,
@@ -24,17 +23,17 @@ use crate::{
 };
 
 type ArcClient = Arc<Mutex<TestClient>>;
-type RefLogs = Rc<RefCell<Vec<MessageLog>>>;
-type RefBool = Rc<RefCell<bool>>;
-type RefIncoming = Rc<RefCell<Vec<ReplyType>>>;
+type ArcLogs = Arc<Mutex<Vec<MessageLog>>>;
+type ArcBoo = Arc<Mutex<bool>>;
+type ArcIncoming = Arc<Mutex<Vec<ReplyType>>>;
 
 pub struct ScenarioRunner {
     data: DispatchData,
     client: ArcClient,
     local_set: LocalSet,
     start_time: u64,
-    message_logs: RefLogs,
-    stop: RefBool,
+    message_logs: ArcLogs,
+    stop: ArcBoo,
 }
 
 impl ScenarioRunner {
@@ -44,8 +43,8 @@ impl ScenarioRunner {
             client: Arc::new(Mutex::new(client)),
             local_set: LocalSet::new(),
             start_time: 0,
-            message_logs: RefLogs::default(),
-            stop: Rc::new(RefCell::new(false)),
+            message_logs: ArcLogs::default(),
+            stop: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -59,7 +58,7 @@ impl ScenarioRunner {
 
         ClientReport {
             start_time: self.start_time,
-            messages: self.message_logs.borrow().clone(),
+            messages: self.message_logs.lock().await.clone(),
         }
     }
 
@@ -85,7 +84,7 @@ impl ScenarioRunner {
 
         let usernames = Rc::new(usernames(&account_ids));
         let friends = Rc::new(friends.clone());
-        let incoming: RefIncoming = Rc::default();
+        let incoming: ArcIncoming = Arc::default();
 
         let start_millis = self.start_time as u128 * 1000;
         let (reg_log, den_log) = {
@@ -181,7 +180,7 @@ impl ScenarioRunner {
                     );
                 }
             }
-            *stop.borrow_mut() = true;
+            *stop.lock().await = true;
         });
     }
 }
@@ -218,16 +217,16 @@ impl ReplyType {
 #[builder]
 async fn recv_logger(
     mut recv: Receiver<DecryptedEnvelope>,
-    msg_log: RefLogs,
+    msg_log: ArcLogs,
     username: String,
     usernames: Rc<HashMap<AccountId, String>>,
     msg_type: MessageType,
     start_time: u128,
     tick_millis: u32,
-    incoming: RefIncoming,
-    stop: RefBool,
+    incoming: ArcIncoming,
+    stop: ArcBoo,
 ) {
-    while !*stop.borrow() {
+    while !*stop.lock().await {
         let timeout_res = tokio::time::timeout(Duration::from_millis(500), recv.recv()).await;
         let recv_res = match timeout_res {
             Ok(res) => res,
@@ -272,9 +271,9 @@ async fn recv_logger(
             }
         };
 
-        incoming.borrow_mut().push(reply);
+        incoming.lock().await.push(reply);
         info!("Received message from '{from_user}'");
-        msg_log.borrow_mut().push(MessageLog {
+        msg_log.lock().await.push(MessageLog {
             r#type: msg_type.clone(),
             from: from_user.clone(),
             to: username.clone(),
@@ -291,7 +290,7 @@ async fn send_message(
     friends: Rc<HashMap<String, Friend>>,
     denim_friends: Rc<HashMap<String, Friend>>,
     account_ids: Rc<HashMap<String, AccountId>>,
-    msg_log: RefLogs,
+    msg_log: ArcLogs,
     denim_prob: f32,
     message_sizes: (u32, u32),
     current_tick: u32,
@@ -299,7 +298,7 @@ async fn send_message(
     let (min, max) = message_sizes;
     let mut rng = thread_rng();
     let mut guard = client.lock().await;
-    let mut msg_log = msg_log.borrow_mut();
+    let mut msg_log = msg_log.lock().await;
 
     let msg = random_bytes(min, max, &mut rng);
     let denim = sample_prob(denim_prob, &mut rng) && denim_friends.len() > 0;
@@ -353,20 +352,20 @@ async fn reply_message(
     client: ArcClient,
     friends: Rc<HashMap<String, Friend>>,
     account_ids: Rc<HashMap<String, AccountId>>,
-    msg_log: RefLogs,
+    msg_log: ArcLogs,
     message_sizes: (u32, u32),
     stale_ticks: u32,
     current_tick: u32,
     reply_prob: f32,
-    incoming: RefIncoming,
+    incoming: ArcIncoming,
 ) {
     let (min, max) = message_sizes;
     let mut rng = thread_rng();
     let mut guard = client.lock().await;
-    let mut msg_log = msg_log.borrow_mut();
+    let mut msg_log = msg_log.lock().await;
 
     let msg = random_bytes(min, max, &mut rng);
-    let mut messages = incoming.borrow_mut();
+    let mut messages = incoming.lock().await;
 
     messages.retain(|x| current_tick - x.tick() > stale_ticks);
     if messages.len() == 0 {
