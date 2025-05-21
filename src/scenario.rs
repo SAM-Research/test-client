@@ -326,7 +326,7 @@ async fn send_message(
     };
 
     let msg_len = msg.len();
-    let (res, msg_type) = if denim {
+    let (res, msg_type) = if denim && guard.is_denim() {
         (
             guard.enqueue_message(*account_id, msg).await,
             MessageType::Denim,
