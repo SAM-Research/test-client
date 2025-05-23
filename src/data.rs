@@ -57,7 +57,7 @@ pub struct MessageLog {
 #[derive(Serialize, Deserialize, Clone, bon::Builder, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientReport {
-    pub start_time: u64,
+    pub start_time: u128,
     pub messages: Vec<MessageLog>,
 }
 

@@ -24,16 +24,16 @@ use crate::{
 
 type ArcClient = Arc<Mutex<TestClient>>;
 type ArcLogs = Arc<Mutex<Vec<MessageLog>>>;
-type ArcBoo = Arc<Mutex<bool>>;
+type ArcBool = Arc<Mutex<bool>>;
 type ArcIncoming = Arc<Mutex<Vec<ReplyType>>>;
 
 pub struct ScenarioRunner {
     data: DispatchData,
     client: ArcClient,
     local_set: LocalSet,
-    start_time: u64,
+    start_time: u128,
     message_logs: ArcLogs,
-    stop: ArcBoo,
+    stop: ArcBool,
 }
 
 impl ScenarioRunner {
@@ -52,7 +52,7 @@ impl ScenarioRunner {
         self.start_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("time cannot go backwards")
-            .as_secs();
+            .as_millis();
         self.event_loop().await;
         self.local_set.await;
 
@@ -230,7 +230,7 @@ async fn recv_logger(
     start_time: u128,
     tick_millis: u32,
     incoming: ArcIncoming,
-    stop: ArcBoo,
+    stop: ArcBool,
 ) {
     while !*stop.lock().await {
         let timeout_res = tokio::time::timeout(Duration::from_millis(500), recv.recv()).await;
@@ -246,12 +246,7 @@ async fn recv_logger(
             }
         };
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("time cannot go backwards")
-            .as_millis();
-        // estimate tick as this runs outside the event loop
-        let recv_tick = ((now - start_time) / tick_millis as u128) as u32;
+        let recv_tick = ((env.timestamp() - start_time) / tick_millis as u128) as u32;
 
         let msg_size = env.content_bytes().len();
         let source = env.source_account_id();
