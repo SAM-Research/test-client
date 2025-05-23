@@ -142,7 +142,19 @@ impl ScenarioRunner {
 
         self.local_set.spawn_local(async move {
             let mut timer = Timer::new(Duration::from_millis(tick_time.into()), end_tick);
-
+            tokio::task::spawn_local(
+                send_message()
+                    .username(username.clone())
+                    .client(client.clone())
+                    .friends(normal_friends.clone())
+                    .denim_friends(denim_friends.clone())
+                    .account_ids(account_ids.clone())
+                    .msg_log(msg_log.clone())
+                    .denim_prob(denim_prob)
+                    .message_sizes(sizes)
+                    .current_tick(timer.current_tick())
+                    .call(),
+            );
             while timer.next().await {
                 let process_client = client.clone();
                 tokio::task::spawn_local(async move {
