@@ -91,8 +91,6 @@ impl ScenarioRunner {
         let usernames = Rc::new(usernames(&account_ids));
         let friends = Rc::new(friends.clone());
         let incoming: ArcIncoming = Arc::default();
-
-        let start_millis = self.start_time as u128 * 1000;
         let (reg_log, den_log) = {
             let guard = client.lock().await;
             if guard.is_denim() {
@@ -103,7 +101,7 @@ impl ScenarioRunner {
                     .username(username.clone())
                     .usernames(usernames.clone())
                     .msg_type(MessageType::Regular)
-                    .start_time(start_millis)
+                    .start_time(self.start_time)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
                     .incoming(incoming.clone())
@@ -114,7 +112,7 @@ impl ScenarioRunner {
                     .username(username.clone())
                     .usernames(usernames.clone())
                     .msg_type(MessageType::Denim)
-                    .start_time(start_millis)
+                    .start_time(self.start_time)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
                     .incoming(incoming.clone())
@@ -128,7 +126,7 @@ impl ScenarioRunner {
                     .username(username.clone())
                     .usernames(usernames.clone())
                     .msg_type(MessageType::Regular)
-                    .start_time(start_millis)
+                    .start_time(self.start_time)
                     .tick_millis(tick_time)
                     .stop(stop.clone())
                     .incoming(incoming.clone())
