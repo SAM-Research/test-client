@@ -209,4 +209,11 @@ impl TestClient {
             TestClient::Denim(denim_client) => denim_client.send_message(account_id, msg).await?,
         })
     }
+
+    pub async fn disconnect(&mut self) -> Result<(), TestClientError> {
+        Ok(match self {
+            TestClient::Sam(client) => client.disconnect().await?,
+            TestClient::Denim(denim_client) => denim_client.disconnect().await?,
+        })
+    }
 }

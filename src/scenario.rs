@@ -55,7 +55,9 @@ impl ScenarioRunner {
             .as_millis();
         self.event_loop().await;
         self.local_set.await;
-
+        if let Err(e) = self.client.lock().await.disconnect().await {
+            error!("Failed to disconnect: {e}");
+        };
         ClientReport {
             start_time: self.start_time,
             messages: self.message_logs.lock().await.clone(),
